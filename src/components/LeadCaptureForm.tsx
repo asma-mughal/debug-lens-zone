@@ -5,76 +5,71 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { validateLeadForm, ValidationError } from '@/lib/validation';
 import { supabase } from '@/integrations/supabase/client';
+import { useLeadStore } from '@/lib/lead-store';
 
 export const LeadCaptureForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', industry: '' });
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const [leads, setLeads] = useState<
-    Array<{ name: string; email: string; industry: string; submitted_at: string }>
-  >([]);
-
-  useEffect(() => {
-    setSubmitted(false);
-  }, []);
+   const { leads, addLead } = useLeadStore();
   const getFieldError = (field: string) => {
     return validationErrors.find(error => error.field === field)?.message;
   };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors = validateLeadForm(formData);
-    setValidationErrors(errors);
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (errors.length === 0) {
-      // Save to database
-try {
-  const { error: emailError } = await supabase.functions.invoke('send-confirmation', {
-    body: {
+  const errors = validateLeadForm(formData);
+  setValidationErrors(errors);
+
+  if (errors.length === 0) {
+    try {
+      const response = await fetch('https://ytyopyznqpnylebzibby.supabase.co/functions/v1/clever-task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eW9weXpucXBueWxlYnppYmJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1NTI3NTUsImV4cCI6MjA3MDEyODc1NX0.nr9WV_ybqZ6PpWT6GjAQm0Bsdr-Q5IejEhToV34VY4E`, // or your hardcoded anon key
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          industry: formData.industry,
+        }),
+      });
+
+     const result = await response.json();
+        if (!response.ok) {
+          console.error('Function call failed:', result);
+          throw new Error(result.message || 'Function call failed');
+        }
+
+        // Create and add the lead
+        const lead = {
+          name: formData.name,
+          email: formData.email,
+          industry: formData.industry,
+          submitted_at: new Date().toISOString(),
+        };
+
+        await addLead(lead);
+        setSubmitted(true);
+        setFormData({ name: '', email: '', industry: '' });
+    } catch (error) {
+      console.error('Unexpected error calling clever-task:', error);
+    }
+
+    const lead = {
       name: formData.name,
       email: formData.email,
       industry: formData.industry,
-    },
-  });
+      submitted_at: new Date().toISOString(),
+    };
 
-  if (emailError) {
-    console.error('Error sending confirmation email:', emailError);
-  } else {
-    console.log('Confirmation email sent successfully');
+    addLead(lead);
+    setSubmitted(true);
+    setFormData({ name: '', email: '', industry: '' });
   }
-} catch (emailError) {
-  console.error('Error calling email function:', emailError);
-}
+};
 
-      // Send confirmation email
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-confirmation', {
-          body: {
-            name: formData.name,
-            email: formData.email,
-            industry: formData.industry,
-          },
-        });
-
-        if (emailError) {
-          console.error('Error sending confirmation email:', emailError);
-        } else {
-          console.log('Confirmation email sent successfully');
-        }
-      } catch (emailError) {
-        console.error('Error calling email function:', emailError);
-      }
-
-      const lead = {
-        name: formData.name,
-        email: formData.email,
-        industry: formData.industry,
-        submitted_at: new Date().toISOString(), 
-      };
-      setLeads([...leads, lead]);
-      setSubmitted(true);
-      setFormData({ name: '', email: '', industry: '' });
-    }
-  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
