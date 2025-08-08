@@ -1,4 +1,4 @@
-■■ Bug Report Summary
+Bug Report Summary
 ### Duplicate Email Sending
 **File**: LeadCaptureForm.tsx (lines 30–66)
 **Severity**: Critical
@@ -94,4 +94,4 @@ Leftover effect from earlier implementation.
 Removed unused useEffect block.
 #### Impact
 ✔ Cleaner component lifecycle
-✔ No redundant renders
+✔ No redundant render
