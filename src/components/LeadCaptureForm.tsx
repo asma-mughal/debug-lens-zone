@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { validateLeadForm, ValidationError } from '@/lib/validation';
 import { supabase } from '@/integrations/supabase/client';
 import { useLeadStore } from '@/lib/lead-store';
-
+const functionUrl = import.meta.env.VITE_SUPABASE_FUNCION
+const supabasePublickey = import.meta.env.VITE_SUPABSE_PUBLIC_KEY
 export const LeadCaptureForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', industry: '' });
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
@@ -23,11 +24,11 @@ export const LeadCaptureForm = () => {
 
   if (errors.length === 0) {
     try {
-      const response = await fetch('https://ytyopyznqpnylebzibby.supabase.co/functions/v1/clever-task', {
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eW9weXpucXBueWxlYnppYmJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1NTI3NTUsImV4cCI6MjA3MDEyODc1NX0.nr9WV_ybqZ6PpWT6GjAQm0Bsdr-Q5IejEhToV34VY4E`, // or your hardcoded anon key
+          Authorization: `Bearer ${supabasePublickey}`, // or your hardcoded anon key
         },
         body: JSON.stringify({
           name: formData.name,
